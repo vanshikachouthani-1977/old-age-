@@ -4,7 +4,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Package, Users, ShieldAlert, ArrowRight } from "lucide-react";
+import { Package, Users, ShieldAlert, ArrowRight, ShoppingCart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import { useEffect } from "react";
@@ -67,6 +67,27 @@ export default function AdminDashboard() {
                                 </div>
                                 <div className="inline-flex items-center text-sm font-semibold text-indigo-600">
                                     Manage Volunteers <ArrowRight className="w-4 h-4 ml-1" />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </Link>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                    <Link href="/admin/orders" className="block outline-none">
+                        <Card className="hover:border-amber-400 cursor-pointer transition-all border-slate-200 shadow-sm hover:shadow-md">
+                            <CardContent className="p-6">
+                                <div className="flex items-center gap-4 mb-4">
+                                    <div className="p-3 bg-amber-50 text-amber-600 rounded-lg">
+                                        <ShoppingCart className="w-8 h-8" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-xl font-bold text-slate-900">Vendor Orders</h2>
+                                        <p className="text-sm text-slate-500">Book supplies from vendors and manage order history</p>
+                                    </div>
+                                </div>
+                                <div className="inline-flex items-center text-sm font-semibold text-amber-600">
+                                    Manage Orders <ArrowRight className="w-4 h-4 ml-1" />
                                 </div>
                             </CardContent>
                         </Card>

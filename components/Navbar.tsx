@@ -43,11 +43,19 @@ export default function Navbar() {
             { name: "Campaigns", href: "/campaigns" },
             { name: "Incoming Donations", href: "/admin/donations" },
             { name: "Volunteers", href: "/admin/volunteers" },
+            { name: "Vendor Orders", href: "/admin/orders" },
         ];
     } else if (role === "volunteer") {
         navLinks = [
             { name: "Current Events", href: "/campaigns" },
             { name: "Dashboard", href: "/volunteer" },
+            { name: "Donate", href: "/donate" },
+            { name: "Contact", href: "/contact" },
+        ];
+    } else if (role === "vendor") {
+        navLinks = [
+            { name: "Dashboard", href: "/vendor/dashboard" },
+            { name: "Campaigns", href: "/campaigns" },
             { name: "Donate", href: "/donate" },
             { name: "Contact", href: "/contact" },
         ];

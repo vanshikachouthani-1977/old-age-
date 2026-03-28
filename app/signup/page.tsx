@@ -39,6 +39,8 @@ export default function SignUpPage() {
                 router.push("/campaigns");
             } else if (role === "volunteer") {
                 router.push("/volunteer/register");
+            } else if (role === "vendor") {
+                router.push("/vendor/register");
             }
         } catch (err: any) {
             setError(err.message || "Failed to create an account. Please try again.");
@@ -131,6 +133,7 @@ export default function SignUpPage() {
                         >
                             <option value="local">Local User</option>
                             <option value="volunteer">Volunteer</option>
+                            <option value="vendor">Vendor</option>
                         </select>
                     </div>
 
