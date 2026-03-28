@@ -272,13 +272,24 @@ export default function VendorDashboard() {
                                                     <p className="text-xs text-slate-400">{order.createdAt?.toDate().toLocaleDateString()}</p>
                                                 </div>
                                                 <div>
-                                                    {order.status === "accepted" ? (
-                                                        <span className="flex items-center text-teal-600 text-sm font-semibold bg-teal-50 px-3 py-1 rounded-full">
+                                                    {order.status === "accepted" && (
+                                                        <span className="flex items-center text-teal-600 text-sm font-semibold bg-teal-50 px-3 py-1 rounded-full border border-teal-100/50">
                                                             <CheckCircle className="w-4 h-4 mr-1" /> Accepted
                                                         </span>
-                                                    ) : (
-                                                        <span className="flex items-center text-red-500 text-sm font-semibold bg-red-50 px-3 py-1 rounded-full">
+                                                    )}
+                                                    {order.status === "rejected" && (
+                                                        <span className="flex items-center text-rose-500 text-sm font-semibold bg-rose-50 px-3 py-1 rounded-full border border-rose-100/50">
                                                             <XCircle className="w-4 h-4 mr-1" /> Rejected
+                                                        </span>
+                                                    )}
+                                                    {order.status === "quotation_received" && (
+                                                        <span className="flex items-center text-amber-600 text-sm font-semibold bg-amber-50 px-3 py-1 rounded-full border border-amber-100/50 shadow-sm">
+                                                            <Clock className="w-4 h-4 mr-1" /> Quoted (Waiting)
+                                                        </span>
+                                                    )}
+                                                    {order.status === "quotation_pending" && (
+                                                        <span className="flex items-center text-blue-500 text-sm font-semibold bg-blue-50 px-3 py-1 rounded-full border border-blue-100/50 shadow-sm">
+                                                            <Clock className="w-4 h-4 mr-1" /> Open Request
                                                         </span>
                                                     )}
                                                 </div>
@@ -339,20 +350,42 @@ export default function VendorDashboard() {
                                             </select>
                                         </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Unit Price (₹)</label>
-                                        <div className="relative group/input">
-                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold group-focus-within/input:text-teal-500 transition-colors">₹</span>
-                                            <input 
-                                                type="number" 
-                                                min="0"
-                                                placeholder="0.00"
-                                                value={prices[vendorData.providedProducts[activeProductIndex]] || ""}
-                                                onChange={(e) => handlePriceChange(vendorData.providedProducts[activeProductIndex], e.target.value)}
-                                                className="w-full pl-9 pr-5 py-3 text-slate-900 font-mono font-bold text-xl bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 outline-none transition-all shadow-sm"
-                                            />
+                                    {!(normalizeKey(vendorData.providedProducts[activeProductIndex]) === "medicine" || normalizeKey(vendorData.providedProducts[activeProductIndex]) === "specs") ? (
+                                        <div className="space-y-2 mt-6 border-t border-slate-100 pt-6">
+                                            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Unit Price (₹)</label>
+                                            <div className="relative group/input">
+                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold group-focus-within/input:text-teal-500 transition-colors">₹</span>
+                                                <input 
+                                                    type="number" 
+                                                    min="0"
+                                                    placeholder="0.00"
+                                                    value={prices[vendorData.providedProducts[activeProductIndex]] || ""}
+                                                    onChange={(e) => handlePriceChange(vendorData.providedProducts[activeProductIndex], e.target.value)}
+                                                    className="w-full pl-9 pr-5 py-3 text-slate-900 font-mono font-bold text-xl bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 outline-none transition-all shadow-sm"
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
+                                    ) : (
+                                        <div className="mt-8 relative group">
+                                            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-teal-500/5 rounded-3xl blur-xl transition-all group-hover:blur-2xl"></div>
+                                            <div className="relative p-6 bg-white border border-blue-100/50 rounded-[2rem] shadow-sm flex flex-col items-center text-center space-y-3 overflow-hidden">
+                                                <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl text-blue-600 shadow-inner group-hover:scale-110 transition-transform duration-500">
+                                                    <Clock className="w-8 h-8 stroke-[1.5]" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.25em] mb-1">Dynamic Pricing</p>
+                                                    <p className="text-sm text-slate-600 font-bold leading-relaxed px-2">
+                                                        Prices are provided <span className="text-blue-600 font-black">per-request</span>. You will be notified when a new order needs your quote.
+                                                    </p>
+                                                </div>
+                                                <div className="pt-2">
+                                                    <span className="inline-flex items-center text-[10px] font-black uppercase text-blue-500/70 bg-blue-50/50 px-3 py-1 rounded-full border border-blue-100/50">
+                                                        Quotation System Active
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>

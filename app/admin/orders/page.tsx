@@ -378,7 +378,7 @@ export default function AdminOrdersDashboard() {
                                                             placeholder={selectedProduct === "Medicine" ? "Medicine Name" : "Spec Details / No"}
                                                             value={item.name}
                                                             onChange={(e) => updateDetailedItem(idx, "name", e.target.value)}
-                                                            className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold placeholder:text-slate-300 focus:border-teal-500 outline-none transition-all"
+                                                            className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-900 placeholder:text-slate-300 focus:border-teal-500 outline-none transition-all shadow-sm"
                                                         />
                                                     </div>
                                                     <div className="w-24 relative">
@@ -388,7 +388,7 @@ export default function AdminOrdersDashboard() {
                                                             required
                                                             value={item.quantity}
                                                             onChange={(e) => updateDetailedItem(idx, "quantity", parseInt(e.target.value) || 0)}
-                                                            className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-mono font-black focus:border-teal-500 outline-none transition-all text-center"
+                                                            className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-mono font-black text-slate-900 focus:border-teal-500 outline-none transition-all text-center shadow-sm"
                                                         />
                                                     </div>
                                                     <button 
@@ -426,9 +426,7 @@ export default function AdminOrdersDashboard() {
                                             <div className="absolute inset-0 bg-white/90 backdrop-blur-md flex items-center justify-center z-20 p-4 text-center animate-in fade-in zoom-in-95 duration-500">
                                                 <div className="flex flex-col items-center max-w-[200px]">
                                                     <div className="relative mb-3 group">
-                                                        {/* Subtle background glow */}
                                                         <div className="absolute inset-0 bg-rose-400/20 blur-2xl rounded-full scale-110 animate-pulse transition-all duration-1000"></div>
-                                                        
                                                         <div className="relative p-4 bg-white rounded-2xl shadow-xl shadow-rose-100 ring-1 ring-rose-100/50 flex items-center justify-center transition-transform duration-500">
                                                             <XCircle className="w-10 h-10 text-rose-500 stroke-[2.5px] relative z-10" />
                                                         </div>
@@ -440,26 +438,48 @@ export default function AdminOrdersDashboard() {
                                                 </div>
                                             </div>
                                         )}
-                                        <div className="flex justify-between items-center text-sm">
-                                            <span className="text-slate-500 font-bold uppercase tracking-wider">Unit Price</span>
-                                            <span className="font-mono font-extrabold text-slate-800 text-lg text-slate-900">₹ {unitPrice}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center border-t border-slate-200/60 pt-4">
-                                            <span className="text-slate-800 font-extrabold text-slate-900">Final Total</span>
-                                            <span className="font-mono font-black text-amber-600 text-2xl">₹ {totalCost}</span>
-                                        </div>
+                                        {selectedProduct === "Medicine" || selectedProduct === "Specs" ? (
+                                            <div className="py-2 text-center">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 font-black">Pricing Strategy</p>
+                                                <div className="inline-flex items-center text-teal-600 bg-teal-100/50 px-4 py-2 rounded-xl text-xs font-black border border-teal-200/50">
+                                                    <Clock className="w-3 h-3 mr-2" /> Cost to be quoted by vendor
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="flex justify-between items-center text-sm">
+                                                    <span className="text-slate-500 font-bold uppercase tracking-wider">Unit Price</span>
+                                                    <span className="font-mono font-extrabold text-slate-800 text-lg text-slate-900">₹ {unitPrice}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center border-t border-slate-200/60 pt-4">
+                                                    <span className="text-slate-800 font-extrabold text-slate-900">Final Total</span>
+                                                    <span className="font-mono font-black text-amber-600 text-2xl">₹ {totalCost}</span>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 )}
 
                                 <Button 
                                     type="submit" 
-                                    disabled={isSubmitting || !selectedVendorId || totalCost === 0 || isOutOfStock} 
+                                    disabled={
+                                        isSubmitting || 
+                                        !selectedVendorId || 
+                                        isOutOfStock ||
+                                        (!(selectedProduct === "Medicine" || selectedProduct === "Specs") && totalCost === 0)
+                                    } 
                                     className="w-full bg-slate-900 hover:bg-black text-white py-8 rounded-2xl shadow-xl shadow-slate-200 transition-all font-bold text-lg flex items-center justify-center hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:hover:scale-100"
                                 >
                                     {isSubmitting ? (
                                         <span className="flex items-center"><Clock className="w-5 h-5 mr-3 animate-spin"/> Processing...</span>
                                     ) : (
-                                        <span className="flex items-center"><CheckCircle className="w-5 h-5 mr-3"/> Confirm Order</span>
+                                        <span className="flex items-center">
+                                            {selectedProduct === "Medicine" || selectedProduct === "Specs" ? (
+                                                <><Clock className="w-5 h-5 mr-3"/> Request Quotation</>
+                                            ) : (
+                                                <><CheckCircle className="w-5 h-5 mr-3"/> Confirm Order</>
+                                            )}
+                                        </span>
                                     )}
                                 </Button>
                             </form>
@@ -613,20 +633,19 @@ export default function AdminOrdersDashboard() {
                                         ₹ {reviewingOrder.items?.reduce((acc, item) => acc + (item.price || 0) * item.quantity, 0)}
                                     </p>
                                 </div>
-                                <div className="flex gap-3">
-                                    <Button 
+                                <div className="flex gap-4">
+                                    <button 
                                         onClick={() => handleRejectQuote(reviewingOrder.id)}
-                                        variant="outline"
-                                        className="bg-white/10 hover:bg-white/20 text-white border-white/20 font-black px-6 py-4 rounded-2xl h-auto"
+                                        className="bg-transparent hover:bg-white/10 text-white font-black px-8 py-4 rounded-2xl transition-all hover:scale-105 active:scale-95 border-2 border-white"
                                     >
                                         Reject
-                                    </Button>
-                                    <Button 
+                                    </button>
+                                    <button 
                                         onClick={() => handleAcceptQuote(reviewingOrder.id, reviewingOrder.items?.reduce((acc, item) => acc + (item.price || 0) * item.quantity, 0) || 0)}
-                                        className="bg-white hover:bg-teal-50 text-teal-700 font-black px-8 py-4 rounded-2xl h-auto shadow-lg"
+                                        className="bg-white hover:bg-teal-50 text-teal-600 font-black px-10 py-4 rounded-2xl shadow-xl transition-all hover:scale-105 active:scale-95 border border-white"
                                     >
                                         Accept Quote
-                                    </Button>
+                                    </button>
                                 </div>
                             </div>
                         </div>
