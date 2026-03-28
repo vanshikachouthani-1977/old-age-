@@ -6,8 +6,8 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
-import { doc, getDocs, collection, query, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
-import { ShoppingCart, Download, CheckCircle, Clock, XCircle, ArrowLeft } from "lucide-react";
+import { doc, getDocs, collection, query, onSnapshot, addDoc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { ShoppingCart, Download, CheckCircle, Clock, XCircle, ArrowLeft, Trash2, Plus, Minus, Eye, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 
@@ -20,6 +20,12 @@ interface Vendor {
     availability?: { [key: string]: string };
 }
 
+interface OrderItem {
+    name: string;
+    quantity: number;
+    price?: number;
+}
+
 interface Order {
     id: string;
     vendorId: string;
@@ -30,6 +36,9 @@ interface Order {
     totalPrice?: number;
     status: string;
     createdAt: any;
+    deleted?: boolean;
+    orderType?: "simple" | "detailed";
+    items?: OrderItem[];
 }
 
 export default function AdminOrdersDashboard() {
@@ -45,6 +54,10 @@ export default function AdminOrdersDashboard() {
     const [selectedVendorId, setSelectedVendorId] = useState("");
     const [quantity, setQuantity] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // Detailed items for Medicine/Specs
+    const [detailedItems, setDetailedItems] = useState<OrderItem[]>([]);
+    const [reviewingOrder, setReviewingOrder] = useState<Order | null>(null);
 
     // Helper to normalize keys (strips whitespace, lowercase)
     const normalizeKey = (key: string) => key?.trim()?.toLowerCase() || "";
@@ -111,8 +124,21 @@ export default function AdminOrdersDashboard() {
 
     const handleCreateOrder = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedVendorId || !selectedProduct || quantity < 1) {
-            alert("Please fill all fields correctly.");
+        
+        const isDetailed = selectedProduct === "Medicine" || selectedProduct === "Specs";
+        
+        if (!selectedVendorId || !selectedProduct) {
+            alert("Please select a vendor and product.");
+            return;
+        }
+
+        if (isDetailed && detailedItems.length === 0) {
+            alert("Please add at least one item to your list.");
+            return;
+        }
+
+        if (!isDetailed && quantity < 1) {
+            alert("Please enter a valid quantity.");
             return;
         }
 
@@ -126,27 +152,84 @@ export default function AdminOrdersDashboard() {
 
         setIsSubmitting(true);
         try {
-            await addDoc(collection(db, "orders"), {
+            const orderData: any = {
                 vendorId: vendor.id,
                 vendorName: vendor.businessName,
                 productName: selectedProduct,
-                quantity: quantity,
-                unitPrice: unitPrice,
-                totalPrice: totalCost,
-                status: "pending",
+                status: isDetailed ? "quotation_pending" : "pending",
                 adminId: user?.uid,
-                createdAt: serverTimestamp()
-            });
+                createdAt: serverTimestamp(),
+                orderType: isDetailed ? "detailed" : "simple",
+            };
 
-            alert("Order placed successfully!");
+            if (isDetailed) {
+                orderData.items = detailedItems;
+                orderData.quantity = detailedItems.reduce((acc, item) => acc + item.quantity, 0);
+            } else {
+                orderData.quantity = quantity;
+                orderData.unitPrice = unitPrice;
+                orderData.totalPrice = totalCost;
+            }
+
+            await addDoc(collection(db, "orders"), orderData);
+
+            alert(isDetailed ? "Quotation request sent to vendor!" : "Order placed successfully!");
             setSelectedProduct("");
             setSelectedVendorId("");
             setQuantity(1);
+            setDetailedItems([]);
         } catch (error) {
             console.error(error);
             alert("Error placing order.");
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const addDetailedItem = () => {
+        setDetailedItems([...detailedItems, { name: "", quantity: 1 }]);
+    };
+
+    const removeDetailedItem = (index: number) => {
+        setDetailedItems(detailedItems.filter((_, i) => i !== index));
+    };
+
+    const updateDetailedItem = (index: number, field: "name" | "quantity", value: string | number) => {
+        const newItems = [...detailedItems];
+        newItems[index] = { ...newItems[index], [field]: value };
+        setDetailedItems(newItems);
+    };
+
+    const handleAcceptQuote = async (orderId: string, totalPrice: number) => {
+        try {
+            await updateDoc(doc(db, "orders", orderId), { 
+                status: "accepted",
+                totalPrice: totalPrice 
+            });
+            setReviewingOrder(null);
+        } catch (error) {
+            console.error(error);
+            alert("Error accepting quote.");
+        }
+    };
+
+    const handleRejectQuote = async (orderId: string) => {
+        try {
+            await updateDoc(doc(db, "orders", orderId), { status: "rejected" });
+            setReviewingOrder(null);
+        } catch (error) {
+            console.error(error);
+            alert("Error rejecting quote.");
+        }
+    };
+
+    const handleSoftDelete = async (orderId: string) => {
+        if (!confirm("Are you sure you want to remove this order from your view? (It will still remain in the database history)")) return;
+        try {
+            await updateDoc(doc(db, "orders", orderId), { deleted: true });
+        } catch (error) {
+            console.error(error);
+            alert("Error updating order.");
         }
     };
 
@@ -268,32 +351,92 @@ export default function AdminOrdersDashboard() {
                                     </div>
                                 )}
 
-                                <div className="space-y-2.5">
-                                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Quantity Needed</label>
-                                    <div className="relative group">
-                                        <input 
-                                            type="number" 
-                                            min="1" 
-                                            required 
-                                            value={quantity || ""} 
-                                            onChange={(e) => setQuantity(e.target.value === "" ? 0 : parseInt(e.target.value))} 
-                                            className="w-full pl-5 pr-12 py-3.5 text-slate-900 font-mono font-bold text-lg bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all text-slate-900"
-                                            placeholder="Enter amount"
-                                        />
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 font-bold group-focus-within:text-amber-500 transition-colors">units</div>
+                                {selectedProduct && (selectedProduct === "Medicine" || selectedProduct === "Specs") ? (
+                                    <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                                        <div className="flex justify-between items-center px-1">
+                                            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Items List</label>
+                                            <button 
+                                                type="button" 
+                                                onClick={addDetailedItem}
+                                                className="text-[10px] font-black uppercase text-teal-600 hover:text-teal-700 flex items-center bg-teal-50 px-3 py-1.5 rounded-lg border border-teal-100 transition-all active:scale-95"
+                                            >
+                                                <Plus className="w-3 h-3 mr-1.5" /> Add New Row
+                                            </button>
+                                        </div>
+                                        
+                                        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                                            {detailedItems.length === 0 && (
+                                                <div className="p-8 border-2 border-dashed border-slate-200 rounded-3xl text-center">
+                                                    <p className="text-xs text-slate-400 font-bold">Start by adding individual items</p>
+                                                </div>
+                                            )}
+                                            {detailedItems.map((item, idx) => (
+                                                <div key={idx} className="flex gap-3 group animate-in zoom-in-95 duration-200">
+                                                    <div className="flex-1 relative">
+                                                        <input 
+                                                            required
+                                                            placeholder={selectedProduct === "Medicine" ? "Medicine Name" : "Spec Details / No"}
+                                                            value={item.name}
+                                                            onChange={(e) => updateDetailedItem(idx, "name", e.target.value)}
+                                                            className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold placeholder:text-slate-300 focus:border-teal-500 outline-none transition-all"
+                                                        />
+                                                    </div>
+                                                    <div className="w-24 relative">
+                                                        <input 
+                                                            type="number"
+                                                            min="1"
+                                                            required
+                                                            value={item.quantity}
+                                                            onChange={(e) => updateDetailedItem(idx, "quantity", parseInt(e.target.value) || 0)}
+                                                            className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-mono font-black focus:border-teal-500 outline-none transition-all text-center"
+                                                        />
+                                                    </div>
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => removeDetailedItem(idx)}
+                                                        className="p-3.5 bg-slate-50 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all border border-transparent hover:border-rose-100"
+                                                    >
+                                                        <Minus className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
+                                ) : (
+                                    <div className="space-y-2.5">
+                                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Quantity Needed</label>
+                                        <div className="relative group">
+                                            <input 
+                                                type="number" 
+                                                min="1" 
+                                                required 
+                                                value={quantity || ""} 
+                                                onChange={(e) => setQuantity(e.target.value === "" ? 0 : parseInt(e.target.value))} 
+                                                className="w-full pl-5 pr-12 py-3.5 text-slate-900 font-mono font-bold text-lg bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all text-slate-900"
+                                                placeholder="Enter amount"
+                                            />
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 font-bold group-focus-within:text-amber-500 transition-colors">units</div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {selectedProduct && selectedVendorId && (
                                     <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 mt-6 space-y-4 relative overflow-hidden ring-4 ring-transparent transition-all">
                                         {isOutOfStock && (
-                                            <div className="absolute inset-0 bg-white/95 backdrop-blur-md flex items-center justify-center z-20 p-6 text-center animate-in fade-in zoom-in-95 duration-300">
-                                                <div className="flex flex-col items-center">
-                                                    <div className="p-4 bg-red-100 rounded-full mb-3 shadow-[0_0_25px_rgba(239,68,68,0.15)]">
-                                                        <XCircle className="w-10 h-10 text-red-600" />
+                                            <div className="absolute inset-0 bg-white/90 backdrop-blur-md flex items-center justify-center z-20 p-4 text-center animate-in fade-in zoom-in-95 duration-500">
+                                                <div className="flex flex-col items-center max-w-[200px]">
+                                                    <div className="relative mb-3 group">
+                                                        {/* Subtle background glow */}
+                                                        <div className="absolute inset-0 bg-rose-400/20 blur-2xl rounded-full scale-110 animate-pulse transition-all duration-1000"></div>
+                                                        
+                                                        <div className="relative p-4 bg-white rounded-2xl shadow-xl shadow-rose-100 ring-1 ring-rose-100/50 flex items-center justify-center transition-transform duration-500">
+                                                            <XCircle className="w-10 h-10 text-rose-500 stroke-[2.5px] relative z-10" />
+                                                        </div>
                                                     </div>
-                                                    <p className="text-red-700 font-extrabold text-xl tracking-tight uppercase">Out of Stock</p>
-                                                    <p className="text-xs text-slate-500 mt-2 font-medium leading-relaxed px-4">This vendor has marked this product as unavailable. Please select another source.</p>
+                                                    <h3 className="text-rose-600 font-black text-lg tracking-tighter uppercase mb-1 drop-shadow-sm">Out of Stock</h3>
+                                                    <p className="text-[11px] text-slate-500 font-bold leading-tight tracking-tight px-1">
+                                                        Source <span className="text-slate-900 font-extrabold">unavailable</span>. Please choose another vendor.
+                                                    </p>
                                                 </div>
                                             </div>
                                         )}
@@ -345,17 +488,18 @@ export default function AdminOrdersDashboard() {
                                             <th className="p-10 pb-4">Financials</th>
                                             <th className="p-10 pb-4 text-right pr-14">Source Vendor</th>
                                             <th className="p-10 pb-4 text-center">Status</th>
+                                            <th className="p-10 pb-4 text-center">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50">
-                                        {orders.length === 0 ? (
+                                        {orders.filter(o => !o.deleted).length === 0 ? (
                                             <tr>
-                                                <td colSpan={6} className="p-20 text-center text-slate-400 font-bold italic">
+                                                <td colSpan={7} className="p-20 text-center text-slate-400 font-bold italic">
                                                     No orders found in recent history.
                                                 </td>
                                             </tr>
                                         ) : (
-                                            orders.map(order => (
+                                            orders.filter(o => !o.deleted).map(order => (
                                                 <tr key={order.id} className="hover:bg-teal-50/30 transition-all duration-300 group">
                                                     <td className="p-10 py-8">
                                                         <p className="text-sm font-black text-slate-800">{order.createdAt?.toDate().toLocaleDateString()}</p>
@@ -378,7 +522,20 @@ export default function AdminOrdersDashboard() {
                                                         <p className="text-[10px] font-bold text-teal-600/60 uppercase tracking-widest mt-1">Trusted Partner</p>
                                                     </td>
                                                     <td className="p-10 py-8">
-                                                        <div className="flex justify-center">
+                                                        <div className="flex justify-center flex-col items-center gap-2">
+                                                            {order.status === "quotation_pending" && (
+                                                                <span className="inline-flex items-center text-blue-600 bg-blue-50 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-100">
+                                                                    <Clock className="w-3.5 h-3.5 mr-2" /> Waiting for Quote
+                                                                </span>
+                                                            )}
+                                                            {order.status === "quotation_received" && (
+                                                                <button 
+                                                                    onClick={() => setReviewingOrder(order)}
+                                                                    className="inline-flex items-center text-amber-600 bg-amber-50 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-200 hover:bg-amber-100 transition-all shadow-sm"
+                                                                >
+                                                                    <Eye className="w-3.5 h-3.5 mr-2" /> Review Quote
+                                                                </button>
+                                                            )}
                                                             {order.status === "pending" && (
                                                                 <span className="inline-flex items-center text-orange-600 bg-orange-50 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-orange-100">
                                                                     <Clock className="w-3.5 h-3.5 mr-2" /> Pending
@@ -396,6 +553,14 @@ export default function AdminOrdersDashboard() {
                                                             )}
                                                         </div>
                                                     </td>
+                                                    <td className="p-10 py-8 text-center">
+                                                        <button 
+                                                            onClick={() => handleSoftDelete(order.id)}
+                                                            className="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-600 hover:text-white transition-all shadow-sm border border-red-100"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </td>
                                                 </tr>
                                             ))
                                         )}
@@ -406,6 +571,68 @@ export default function AdminOrdersDashboard() {
                     </div>
                 </div>
             </div>
+
+            {/* Review Quote Modal */}
+            {reviewingOrder && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 lg:p-8 animate-in fade-in duration-300">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setReviewingOrder(null)}></div>
+                    <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="bg-slate-50 px-10 py-8 border-b border-slate-100 flex justify-between items-center">
+                            <div>
+                                <h3 className="text-2xl font-black text-slate-800 tracking-tight">Review Vendor Quote</h3>
+                                <p className="text-sm font-bold text-slate-400 mt-1 uppercase tracking-wider">{reviewingOrder.vendorName} • {reviewingOrder.productName}</p>
+                            </div>
+                            <button onClick={() => setReviewingOrder(null)} className="p-3 hover:bg-slate-200 rounded-full transition-colors">
+                                <XCircle className="w-6 h-6 text-slate-400" />
+                            </button>
+                        </div>
+                        
+                        <div className="p-10 space-y-8">
+                            <div className="space-y-4">
+                                <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Itemized Pricing</h4>
+                                <div className="space-y-3">
+                                    {reviewingOrder.items?.map((item, idx) => (
+                                        <div key={idx} className="flex justify-between items-center p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                                            <div>
+                                                <p className="font-extrabold text-slate-900">{item.name}</p>
+                                                <p className="text-xs text-slate-500 font-bold mt-0.5">Quantity: {item.quantity}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-teal-600 font-black font-mono text-lg">₹ {item.price || 0}</p>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Subtotal: ₹ {(item.price || 0) * item.quantity}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="bg-teal-600 rounded-3xl p-8 text-white flex justify-between items-center shadow-xl shadow-teal-900/10">
+                                <div>
+                                    <p className="text-teal-100 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Total Quoted Amount</p>
+                                    <p className="text-4xl font-black font-mono tracking-tighter">
+                                        ₹ {reviewingOrder.items?.reduce((acc, item) => acc + (item.price || 0) * item.quantity, 0)}
+                                    </p>
+                                </div>
+                                <div className="flex gap-3">
+                                    <Button 
+                                        onClick={() => handleRejectQuote(reviewingOrder.id)}
+                                        variant="outline"
+                                        className="bg-white/10 hover:bg-white/20 text-white border-white/20 font-black px-6 py-4 rounded-2xl h-auto"
+                                    >
+                                        Reject
+                                    </Button>
+                                    <Button 
+                                        onClick={() => handleAcceptQuote(reviewingOrder.id, reviewingOrder.items?.reduce((acc, item) => acc + (item.price || 0) * item.quantity, 0) || 0)}
+                                        className="bg-white hover:bg-teal-50 text-teal-700 font-black px-8 py-4 rounded-2xl h-auto shadow-lg"
+                                    >
+                                        Accept Quote
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <Footer />
         </main>
