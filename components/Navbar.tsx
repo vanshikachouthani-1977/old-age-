@@ -81,11 +81,11 @@ export default function Navbar() {
                             <Heart className="w-6 h-6 fill-current" />
                         </div>
                         <div className="flex flex-col">
-                            <span className="font-heading font-bold text-xl text-slate-800 leading-tight group-hover:text-teal-600 transition-colors">
-                                Seva Trust
+                            <span className="font-heading font-bold text-2xl text-slate-800 leading-tight group-hover:text-teal-600 transition-colors">
+                                Shantai
                             </span>
-                            <span className="text-xs text-slate-500 font-medium">
-                                Building Stronger Communities
+                            <span className="text-sm text-teal-600 font-medium uppercase tracking-wide">
+                                old age home
                             </span>
                         </div>
                     </Link>

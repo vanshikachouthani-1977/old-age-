@@ -4,7 +4,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Shirt, Book, Utensils, Apple, PenTool, Box, CheckCircle, X, ArrowLeft, Trash2 } from "lucide-react";
+import { Shirt, HeartHandshake, Utensils, Apple, PenTool, Box, CheckCircle, X, ArrowLeft, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp, query, where, orderBy, onSnapshot, updateDoc, deleteDoc, doc } from "firebase/firestore";
@@ -14,7 +14,7 @@ import { useEffect } from "react";
 export default function DonationPortal() {
     const categories = [
         { name: "Clothes", icon: Shirt, color: "text-blue-500", bg: "bg-blue-50" },
-        { name: "Books", icon: Book, color: "text-purple-500", bg: "bg-purple-50" },
+        { name: "Visit", icon: HeartHandshake, color: "text-purple-500", bg: "bg-purple-50" },
         { name: "Utensils", icon: Utensils, color: "text-green-500", bg: "bg-green-50" },
         { name: "Food", icon: Apple, color: "text-red-500", bg: "bg-red-50" },
         { name: "Stationery", icon: PenTool, color: "text-yellow-500", bg: "bg-yellow-50" },
@@ -152,7 +152,12 @@ export default function DonationPortal() {
                                 <div key={donation.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-xl border border-slate-100 bg-slate-50 gap-4">
                                     <div>
                                         <h3 className="font-bold text-slate-800">{donation.category}</h3>
-                                        <p className="text-sm text-slate-600">{donation.description} • Qty: {donation.quantity}</p>
+                                        <p className="text-sm text-slate-600">
+                                            {donation.category === "Visit" 
+                                                ? `Date: ${donation.description} • Time: ${donation.quantity}`
+                                                : `${donation.description} • Qty: ${donation.quantity}`
+                                            }
+                                        </p>
                                         <p className="text-xs text-slate-400 mt-1">
                                             {donation.createdAt?.toDate ? donation.createdAt.toDate().toLocaleDateString() : 'Just now'}
                                         </p>
@@ -226,7 +231,11 @@ export default function DonationPortal() {
                                         })()}
                                         <h2 className="text-xl font-bold text-slate-800">Donate {selectedCategory}</h2>
                                     </div>
-                                    <p className="text-sm text-slate-500 mt-1">Fill in your details and we'll contact you to arrange collection</p>
+                                    <p className="text-sm text-slate-500 mt-1">
+                                        {selectedCategory === "Visit" 
+                                            ? "Fill in your details and when you'd like to visit" 
+                                            : "Fill in your details and we'll contact you to arrange collection"}
+                                    </p>
                                 </div>
                                 <button onClick={() => setSelectedCategory(null)} className="text-slate-400 hover:text-slate-600 transition-colors p-1">
                                     <X className="w-5 h-5" />
@@ -251,25 +260,38 @@ export default function DonationPortal() {
                                     <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="john@example.com" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-900 text-sm" />
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-sm font-semibold text-slate-700">Item Description</label>
-                                        <input type="text" required value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g., Winter jackets, textbooks" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-900 text-sm" />
+                                {selectedCategory === "Visit" ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <label className="text-sm font-semibold text-slate-700">Preferred Date</label>
+                                            <input type="date" required value={description} onChange={(e) => setDescription(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-900 text-sm" />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-sm font-semibold text-slate-700">Preferred Time</label>
+                                            <input type="time" required value={quantity} onChange={(e) => setQuantity(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-900 text-sm" />
+                                        </div>
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-sm font-semibold text-slate-700">Approximate Quantity</label>
-                                        <input type="text" required value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="e.g., 5 items, 2 boxes" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-900 text-sm" />
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <label className="text-sm font-semibold text-slate-700">Item Description</label>
+                                            <input type="text" required value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g., Winter jackets, textbooks" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-900 text-sm" />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-sm font-semibold text-slate-700">Approximate Quantity</label>
+                                            <input type="text" required value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="e.g., 5 items, 2 boxes" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-900 text-sm" />
+                                        </div>
                                     </div>
-                                </div>
+                                )}
 
                                 <div className="space-y-1.5 pb-2">
                                     <label className="text-sm font-semibold text-slate-700">Additional Notes</label>
-                                    <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Any specific details about the items or preferred collection time..." className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-900 text-sm leading-relaxed"></textarea>
+                                    <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={selectedCategory === "Visit" ? "Any specific details or questions you have for your visit..." : "Any specific details about the items or preferred collection time..."} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-900 text-sm leading-relaxed"></textarea>
                                 </div>
 
                                 <div className="pt-2 flex justify-end">
                                     <button type="submit" disabled={isSubmitting} className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 px-6 rounded-lg transition-colors text-sm shadow-sm cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed">
-                                        {isSubmitting ? 'Submitting...' : 'Submit Pledge'}
+                                        {isSubmitting ? 'Submitting...' : (selectedCategory === "Visit" ? 'Schedule Visit' : 'Submit Pledge')}
                                     </button>
                                 </div>
                             </form>

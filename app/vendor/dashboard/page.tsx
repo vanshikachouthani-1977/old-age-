@@ -14,6 +14,7 @@ interface OrderItem {
     name: string;
     quantity: number;
     price?: number;
+    specNo?: string;
 }
 
 interface Order {
@@ -350,7 +351,7 @@ export default function VendorDashboard() {
                                             </select>
                                         </div>
                                     </div>
-                                    {!(normalizeKey(vendorData.providedProducts[activeProductIndex]) === "medicine" || normalizeKey(vendorData.providedProducts[activeProductIndex]) === "specs") ? (
+                                    {!(normalizeKey(vendorData.providedProducts[activeProductIndex]) === "medicine" || normalizeKey(vendorData.providedProducts[activeProductIndex]) === "specs") && (
                                         <div className="space-y-2 mt-6 border-t border-slate-100 pt-6">
                                             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Unit Price (₹)</label>
                                             <div className="relative group/input">
@@ -363,26 +364,6 @@ export default function VendorDashboard() {
                                                     onChange={(e) => handlePriceChange(vendorData.providedProducts[activeProductIndex], e.target.value)}
                                                     className="w-full pl-9 pr-5 py-3 text-slate-900 font-mono font-bold text-xl bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 outline-none transition-all shadow-sm"
                                                 />
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="mt-8 relative group">
-                                            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-teal-500/5 rounded-3xl blur-xl transition-all group-hover:blur-2xl"></div>
-                                            <div className="relative p-6 bg-white border border-blue-100/50 rounded-[2rem] shadow-sm flex flex-col items-center text-center space-y-3 overflow-hidden">
-                                                <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl text-blue-600 shadow-inner group-hover:scale-110 transition-transform duration-500">
-                                                    <Clock className="w-8 h-8 stroke-[1.5]" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.25em] mb-1">Dynamic Pricing</p>
-                                                    <p className="text-sm text-slate-600 font-bold leading-relaxed px-2">
-                                                        Prices are provided <span className="text-blue-600 font-black">per-request</span>. You will be notified when a new order needs your quote.
-                                                    </p>
-                                                </div>
-                                                <div className="pt-2">
-                                                    <span className="inline-flex items-center text-[10px] font-black uppercase text-blue-500/70 bg-blue-50/50 px-3 py-1 rounded-full border border-blue-100/50">
-                                                        Quotation System Active
-                                                    </span>
-                                                </div>
                                             </div>
                                         </div>
                                     )}
@@ -423,7 +404,10 @@ export default function VendorDashboard() {
                                 {quoteItems.map((item, idx) => (
                                     <div key={idx} className="flex flex-col gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100">
                                         <div className="flex justify-between items-start">
-                                            <p className="font-extrabold text-slate-900">{item.name}</p>
+                                            <p className="font-extrabold text-slate-900">
+                                                {item.name || (quotingOrder.productName === "Specs" ? "Spectacles" : "Unknown Item")}
+                                                {quotingOrder.productName === "Specs" && item.specNo ? <span className="text-blue-600 ml-2 text-sm">(No: {item.specNo})</span> : ""}
+                                            </p>
                                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white px-2 py-0.5 rounded-full border border-slate-100">Qty: {item.quantity}</span>
                                         </div>
                                         <div className="relative mt-2">

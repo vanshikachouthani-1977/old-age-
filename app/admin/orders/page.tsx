@@ -24,6 +24,7 @@ interface OrderItem {
     name: string;
     quantity: number;
     price?: number;
+    specNo?: string;
 }
 
 interface Order {
@@ -187,14 +188,14 @@ export default function AdminOrdersDashboard() {
     };
 
     const addDetailedItem = () => {
-        setDetailedItems([...detailedItems, { name: "", quantity: 1 }]);
+        setDetailedItems([...detailedItems, { name: "", quantity: 1, specNo: "" }]);
     };
 
     const removeDetailedItem = (index: number) => {
         setDetailedItems(detailedItems.filter((_, i) => i !== index));
     };
 
-    const updateDetailedItem = (index: number, field: "name" | "quantity", value: string | number) => {
+    const updateDetailedItem = (index: number, field: "name" | "quantity" | "price" | "specNo", value: string | number) => {
         const newItems = [...detailedItems];
         newItems[index] = { ...newItems[index], [field]: value };
         setDetailedItems(newItems);
@@ -372,15 +373,28 @@ export default function AdminOrdersDashboard() {
                                             )}
                                             {detailedItems.map((item, idx) => (
                                                 <div key={idx} className="flex gap-3 group animate-in zoom-in-95 duration-200">
-                                                    <div className="flex-1 relative">
-                                                        <input 
-                                                            required
-                                                            placeholder={selectedProduct === "Medicine" ? "Medicine Name" : "Spec Details / No"}
-                                                            value={item.name}
-                                                            onChange={(e) => updateDetailedItem(idx, "name", e.target.value)}
-                                                            className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-900 placeholder:text-slate-300 focus:border-teal-500 outline-none transition-all shadow-sm"
-                                                        />
-                                                    </div>
+                                                    {selectedProduct === "Medicine" && (
+                                                        <div className="flex-1 relative">
+                                                            <input 
+                                                                required
+                                                                placeholder="Medicine Name"
+                                                                value={item.name}
+                                                                onChange={(e) => updateDetailedItem(idx, "name", e.target.value)}
+                                                                className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-900 placeholder:text-slate-300 focus:border-teal-500 outline-none transition-all shadow-sm"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    {selectedProduct === "Specs" && (
+                                                        <div className="flex-1 relative">
+                                                            <input 
+                                                                required
+                                                                placeholder="Spec No."
+                                                                value={item.specNo || ""}
+                                                                onChange={(e) => updateDetailedItem(idx, "specNo", e.target.value)}
+                                                                className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-900 placeholder:text-slate-300 focus:border-teal-500 outline-none transition-all shadow-sm"
+                                                            />
+                                                        </div>
+                                                    )}
                                                     <div className="w-24 relative">
                                                         <input 
                                                             type="number"
@@ -466,7 +480,7 @@ export default function AdminOrdersDashboard() {
                                         isSubmitting || 
                                         !selectedVendorId || 
                                         isOutOfStock ||
-                                        (!(selectedProduct === "Medicine" || selectedProduct === "Specs") && totalCost === 0)
+                                        (totalCost === 0 && !(selectedProduct === "Medicine" || selectedProduct === "Specs"))
                                     } 
                                     className="w-full bg-slate-900 hover:bg-black text-white py-8 rounded-2xl shadow-xl shadow-slate-200 transition-all font-bold text-lg flex items-center justify-center hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:hover:scale-100"
                                 >
@@ -562,14 +576,28 @@ export default function AdminOrdersDashboard() {
                                                                 </span>
                                                             )}
                                                             {order.status === "accepted" && (
-                                                                <span className="inline-flex items-center text-emerald-600 bg-emerald-50 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100">
-                                                                    <CheckCircle className="w-3.5 h-3.5 mr-2" /> Accepted
-                                                                </span>
+                                                                <>
+                                                                    <span className="inline-flex items-center text-emerald-600 bg-emerald-50 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100">
+                                                                        <CheckCircle className="w-3.5 h-3.5 mr-2" /> Accepted
+                                                                    </span>
+                                                                    {order.items && order.items.length > 0 && (
+                                                                        <button onClick={() => setReviewingOrder(order)} className="mt-1 inline-flex items-center text-slate-400 hover:text-teal-600 text-[10px] font-black uppercase tracking-widest transition-colors bg-white px-3 py-1 rounded-full border border-slate-100 shadow-sm">
+                                                                            <Eye className="w-3 h-3 mr-1.5" /> Details
+                                                                        </button>
+                                                                    )}
+                                                                </>
                                                             )}
                                                             {order.status === "rejected" && (
-                                                                <span className="inline-flex items-center text-red-600 bg-red-50 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-red-100">
-                                                                    <XCircle className="w-3.5 h-3.5 mr-2" /> Rejected
-                                                                </span>
+                                                                <>
+                                                                    <span className="inline-flex items-center text-red-600 bg-red-50 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-red-100">
+                                                                        <XCircle className="w-3.5 h-3.5 mr-2" /> Rejected
+                                                                    </span>
+                                                                    {order.items && order.items.length > 0 && (
+                                                                        <button onClick={() => setReviewingOrder(order)} className="mt-1 inline-flex items-center text-slate-400 hover:text-teal-600 text-[10px] font-black uppercase tracking-widest transition-colors bg-white px-3 py-1 rounded-full border border-slate-100 shadow-sm">
+                                                                            <Eye className="w-3 h-3 mr-1.5" /> Details
+                                                                        </button>
+                                                                    )}
+                                                                </>
                                                             )}
                                                         </div>
                                                     </td>
@@ -599,7 +627,9 @@ export default function AdminOrdersDashboard() {
                     <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-300">
                         <div className="bg-slate-50 px-10 py-8 border-b border-slate-100 flex justify-between items-center">
                             <div>
-                                <h3 className="text-2xl font-black text-slate-800 tracking-tight">Review Vendor Quote</h3>
+                                <h3 className="text-2xl font-black text-slate-800 tracking-tight">
+                                    {reviewingOrder.status === "quotation_received" ? "Review Vendor Quote" : "Order Details"}
+                                </h3>
                                 <p className="text-sm font-bold text-slate-400 mt-1 uppercase tracking-wider">{reviewingOrder.vendorName} • {reviewingOrder.productName}</p>
                             </div>
                             <button onClick={() => setReviewingOrder(null)} className="p-3 hover:bg-slate-200 rounded-full transition-colors">
@@ -614,7 +644,10 @@ export default function AdminOrdersDashboard() {
                                     {reviewingOrder.items?.map((item, idx) => (
                                         <div key={idx} className="flex justify-between items-center p-5 bg-slate-50 rounded-2xl border border-slate-100">
                                             <div>
-                                                <p className="font-extrabold text-slate-900">{item.name}</p>
+                                                <p className="font-extrabold text-slate-900">
+                                                    {item.name || (reviewingOrder.productName === "Specs" ? "Spectacles" : "Unknown Item")}
+                                                    {reviewingOrder.productName === "Specs" && item.specNo ? <span className="text-teal-600 ml-2 text-sm">(No: {item.specNo})</span> : ""}
+                                                </p>
                                                 <p className="text-xs text-slate-500 font-bold mt-0.5">Quantity: {item.quantity}</p>
                                             </div>
                                             <div className="text-right">
@@ -634,18 +667,29 @@ export default function AdminOrdersDashboard() {
                                     </p>
                                 </div>
                                 <div className="flex gap-4">
-                                    <button 
-                                        onClick={() => handleRejectQuote(reviewingOrder.id)}
-                                        className="bg-transparent hover:bg-white/10 text-white font-black px-8 py-4 rounded-2xl transition-all hover:scale-105 active:scale-95 border-2 border-white"
-                                    >
-                                        Reject
-                                    </button>
-                                    <button 
-                                        onClick={() => handleAcceptQuote(reviewingOrder.id, reviewingOrder.items?.reduce((acc, item) => acc + (item.price || 0) * item.quantity, 0) || 0)}
-                                        className="bg-white hover:bg-teal-50 text-teal-600 font-black px-10 py-4 rounded-2xl shadow-xl transition-all hover:scale-105 active:scale-95 border border-white"
-                                    >
-                                        Accept Quote
-                                    </button>
+                                    {reviewingOrder.status === "quotation_received" ? (
+                                        <>
+                                            <button 
+                                                onClick={() => handleRejectQuote(reviewingOrder.id)}
+                                                className="bg-transparent hover:bg-white/10 text-white font-black px-8 py-4 rounded-2xl transition-all hover:scale-105 active:scale-95 border-2 border-white"
+                                            >
+                                                Reject
+                                            </button>
+                                            <button 
+                                                onClick={() => handleAcceptQuote(reviewingOrder.id, reviewingOrder.items?.reduce((acc, item) => acc + (item.price || 0) * item.quantity, 0) || 0)}
+                                                className="bg-white hover:bg-teal-50 text-teal-600 font-black px-10 py-4 rounded-2xl shadow-xl transition-all hover:scale-105 active:scale-95 border border-white"
+                                            >
+                                                Accept Quote
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <button 
+                                            onClick={() => setReviewingOrder(null)}
+                                            className="bg-white hover:bg-slate-50 text-teal-700 font-black px-10 py-3 rounded-2xl shadow-xl transition-all hover:scale-105 active:scale-95 border border-white"
+                                        >
+                                            Close Details
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>
